@@ -70,7 +70,11 @@ export class BoardsService {
 
   /** Full board view: columns (with ordered tasks) and members. */
   async getFullBoard(userId: string, boardId: string) {
-    await this.access.assertAccess(userId, boardId, BoardRole.VIEWER);
+    const membership = await this.access.assertAccess(
+      userId,
+      boardId,
+      BoardRole.VIEWER,
+    );
 
     const board = await this.prisma.board.findUnique({
       where: { id: boardId },
@@ -98,7 +102,7 @@ export class BoardsService {
       await this.access.assertBoardExists(boardId);
     }
 
-    return this.serializeBoard(board);
+    return this.serializeBoard(board, membership.role);
   }
 
   async update(userId: string, boardId: string, dto: UpdateBoardDto) {
@@ -128,10 +132,11 @@ export class BoardsService {
 
   // --- Shared serializer helpers (used by columns/tasks services too) ---
 
-  serializeBoard(board: any) {
+  serializeBoard(board: any, role: BoardRole) {
     return {
       id: board.id,
       name: board.name,
+      role,
       ownerId: board.ownerId,
       owner: board.owner,
       createdAt: board.createdAt,
