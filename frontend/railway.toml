@@ -1,0 +1,14 @@
+# Railway config for the Next.js frontend.
+# Deploy this service with "Root Directory" = frontend. Railway detects the
+# Dockerfile and builds the standalone server.
+#
+# Set NEXT_PUBLIC_API_URL on the service (it is passed to the Dockerfile as a
+# build arg and inlined into the frontend bundle at build time).
+[build]
+builder = "DOCKERFILE"
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 180
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

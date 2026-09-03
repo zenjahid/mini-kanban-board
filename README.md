@@ -294,3 +294,36 @@ Postgres (Neon, Supabase, Railway, Render, AWS RDS, …).
    `https://your-app.vercel.app`) and keep `JWT_SECRET` strong.
 5. Point the backend's `DATABASE_URL` at your managed Postgres and run the
    migrations (`npx prisma migrate deploy`) and seed once.
+
+### Deploying everything on Railway
+
+Railway can host the **entire** stack — backend container, frontend container,
+and managed PostgreSQL — in one place, which is simpler than the
+Vercel + separate-backend split above.
+
+1. **Postgres** — in Railway, add a **PostgreSQL** plugin (Database →
+   PostgreSQL). Give it a name (e.g. `postgres`) and keep it private.
+
+2. **Backend** — add a service from this repo with **Root Directory** =
+   `backend` (Railway picks up `backend/railway.toml` + `Dockerfile`). Set:
+   - `DATABASE_URL` = `${{postgres.DATABASE_URL}}` (Railway reference
+     variable; use the actual service name)
+   - `JWT_SECRET` = strong random value (≥ 32 chars, `openssl rand -hex 32`)
+   - `CORS_ORIGIN` = the frontend's public URL (e.g. `https://<frontend>.up.railway.app`)
+   - `NODE_ENV` is already `production` in the image, so a weak/missing
+     `JWT_SECRET` will refuse to boot — set it (step above).
+   - Enable **Public Networking** so it gets a `*.up.railway.app` domain.
+
+3. **Frontend** — add a second service from this repo with **Root
+   Directory** = `frontend`. Set the build-time variable:
+   - `NEXT_PUBLIC_API_URL` = `https://<backend>.up.railway.app/api`
+   - Enable **Public Networking** so it gets its own `*.up.railway.app` URL.
+
+4. Migrations apply automatically when the backend container boots
+   (`prisma migrate deploy` in its Dockerfile `CMD`). The demo seed does not;
+   to load demo users run `railway run npx prisma db seed` once against the
+   backend service, or just register an account from the UI.
+
+Railway injects `PORT` at runtime, so both containers listen on the right port
+(the backend reads `PORT` from config and the Next standalone server reads
+`PORT`).

@@ -1,0 +1,11 @@
+# Railway config for the NestJS backend.
+# Deploy this service with "Root Directory" = backend. Railway detects the
+# Dockerfile, which runs `prisma migrate deploy && node dist/main.js` on boot.
+[build]
+builder = "DOCKERFILE"
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 180
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
