@@ -13,6 +13,8 @@ access control, and drag-and-drop task management.
   caller's board membership + role. Cross-board access is rejected.
 - **Drag & drop** — reorder tasks within a column or move them across columns
   to an exact position, with stable conflict-free ordering.
+- **Task details** — click any task card to edit its title, description, and
+  assignee (pick from board members).
 - **Dockerized** — one command brings up Postgres, API, and web.
 
 ## Tech Stack

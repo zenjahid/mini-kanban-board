@@ -1,6 +1,5 @@
 'use client';
 
-import { useRef, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Task } from '@/lib/types';
@@ -9,14 +8,14 @@ interface TaskCardProps {
   task: Task;
   canEdit: boolean;
   onDelete: (id: string) => void;
-  onSaveTitle: (id: string, title: string) => void;
+  onOpen: (task: Task) => void;
 }
 
 interface TaskCardLayoutProps {
   task: Task;
   canEdit: boolean;
   onDelete: (id: string) => void;
-  onSaveTitle: (id: string, title: string) => void;
+  onOpen: (task: Task) => void;
   overlay?: boolean;
 }
 
@@ -25,65 +24,23 @@ export function TaskCardLayout({
   task,
   canEdit,
   onDelete,
-  onSaveTitle,
+  onOpen,
   overlay,
 }: TaskCardLayoutProps) {
-  const [editing, setEditing] = useState(false);
-  const [title, setTitle] = useState(task.title);
-  const skipBlur = useRef(false);
-
-  const commit = (cancelled: boolean) => {
-    setEditing(false);
-    if (cancelled) {
-      setTitle(task.title);
-      return;
-    }
-    const next = title.trim();
-    if (next && next !== task.title) onSaveTitle(task.id, next);
-    else setTitle(task.title);
-  };
-
   return (
     <div
-      className={`group cursor-grab rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition hover:border-brand-500 hover:shadow ${
-        overlay ? 'rotate-1 shadow-lg ring-2 ring-brand-400' : ''
-      }`}
+      onClick={canEdit ? () => onOpen(task) : undefined}
+      className={`group rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition hover:border-brand-500 hover:shadow ${
+        canEdit ? 'cursor-pointer' : ''
+      } ${overlay ? 'rotate-1 shadow-lg ring-2 ring-brand-400' : ''}`}
     >
       <div className="flex items-start justify-between gap-2">
-        {editing ? (
-          <input
-            autoFocus
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={() => {
-              if (skipBlur.current) {
-                skipBlur.current = false;
-                return;
-              }
-              commit(false);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                skipBlur.current = true;
-                commit(false);
-              }
-              if (e.key === 'Escape') {
-                skipBlur.current = true;
-                commit(true);
-              }
-            }}
-            onClick={(e) => e.stopPropagation()}
-            className="w-full rounded border border-brand-500 px-1 py-0.5 text-sm outline-none"
-          />
-        ) : (
-          <p
-            className="flex-1 break-words text-sm font-medium"
-            onDoubleClick={canEdit ? () => setEditing(true) : undefined}
-            title={canEdit ? 'Double-click to edit' : task.title}
-          >
-            {task.title}
-          </p>
-        )}
+        <p
+          className="flex-1 break-words text-sm font-medium"
+          title={canEdit ? 'Click to edit' : task.title}
+        >
+          {task.title}
+        </p>
 
         {canEdit && (
           <button
@@ -120,7 +77,7 @@ export default function SortableTaskCard({
   task,
   canEdit,
   onDelete,
-  onSaveTitle,
+  onOpen,
 }: TaskCardProps) {
   const {
     attributes,
@@ -153,7 +110,7 @@ export default function SortableTaskCard({
             task={task}
             canEdit={canEdit}
             onDelete={onDelete}
-            onSaveTitle={onSaveTitle}
+            onOpen={onOpen}
           />
         </div>
       </div>

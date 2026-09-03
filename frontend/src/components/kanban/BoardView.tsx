@@ -19,6 +19,7 @@ import { useAuth } from '@/lib/auth-context';
 import type { Board, BoardMember, BoardRole, Column, Task } from '@/lib/types';
 import ColumnCard from './ColumnCard';
 import SharePanel from './SharePanel';
+import TaskEditorModal from './TaskEditorModal';
 import { TaskCardLayout } from './TaskCard';
 
 const TASK_PREFIX = 'task:';
@@ -93,6 +94,7 @@ export default function BoardView({ boardId }: { boardId: string }) {
   const [loadError, setLoadError] = useState('');
   const [toast, setToast] = useState<string | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [addingColumn, setAddingColumn] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
@@ -254,17 +256,22 @@ export default function BoardView({ boardId }: { boardId: string }) {
     }
   };
 
-  const saveTaskTitle = async (taskId: string, title: string) => {
-    try {
-      applyBoard(
-        await api<Board>(`/boards/${boardId}/tasks/${taskId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ title }),
-        }),
-      );
-    } catch (e) {
-      flash(e instanceof Error ? e.message : 'Could not update task');
-    }
+  const openTask = (task: Task) => setEditingTask(task);
+
+  const saveTask = async (
+    taskId: string,
+    data: {
+      title: string;
+      description: string | null;
+      assigneeId: string | null;
+    },
+  ) => {
+    applyBoard(
+      await api<Board>(`/boards/${boardId}/tasks/${taskId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    );
   };
 
   const addColumn = async (name: string) => {
@@ -487,7 +494,7 @@ export default function BoardView({ boardId }: { boardId: string }) {
               canEdit={canEdit}
               onAddTask={addTask}
               onDeleteTask={deleteTask}
-              onSaveTaskTitle={saveTaskTitle}
+              onOpenTask={openTask}
               onRenameColumn={renameColumn}
               onDeleteColumn={deleteColumn}
               onMoveColumn={moveColumn}
@@ -543,7 +550,7 @@ export default function BoardView({ boardId }: { boardId: string }) {
                 task={activeTask}
                 canEdit={canEdit}
                 onDelete={() => {}}
-                onSaveTitle={() => {}}
+                onOpen={() => {}}
                 overlay
               />
             </div>
@@ -560,6 +567,16 @@ export default function BoardView({ boardId }: { boardId: string }) {
           onUpdateRole={updateMemberRole}
           onRemoveMember={removeMember}
           onClose={() => setShareOpen(false)}
+        />
+      )}
+
+      {/* Task editor */}
+      {editingTask && (
+        <TaskEditorModal
+          task={editingTask}
+          members={board.members}
+          onSave={saveTask}
+          onClose={() => setEditingTask(null)}
         />
       )}
 

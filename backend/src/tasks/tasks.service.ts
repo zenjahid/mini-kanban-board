@@ -184,7 +184,7 @@ export class TasksService {
 
   private async assertAssigneeInBoard(
     boardId: string,
-    assigneeId: string | undefined,
+    assigneeId: string | null | undefined,
   ) {
     if (!assigneeId) return;
     const member = await this.prisma.boardMember.findUnique({

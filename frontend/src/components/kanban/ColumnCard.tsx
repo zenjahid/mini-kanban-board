@@ -7,7 +7,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import SortableTaskCard, { TaskCardLayout } from './TaskCard';
-import type { Column } from '@/lib/types';
+import type { Column, Task } from '@/lib/types';
 
 interface ColumnCardProps {
   column: Column;
@@ -16,7 +16,7 @@ interface ColumnCardProps {
   canEdit: boolean;
   onAddTask: (columnId: string, title: string) => void;
   onDeleteTask: (taskId: string) => void;
-  onSaveTaskTitle: (taskId: string, title: string) => void;
+  onOpenTask: (task: Task) => void;
   onRenameColumn: (columnId: string, name: string) => void;
   onDeleteColumn: (columnId: string) => void;
   onMoveColumn: (columnId: string, direction: -1 | 1) => void;
@@ -30,7 +30,7 @@ export default function ColumnCard(props: ColumnCardProps) {
     canEdit,
     onAddTask,
     onDeleteTask,
-    onSaveTaskTitle,
+    onOpenTask,
     onRenameColumn,
     onDeleteColumn,
     onMoveColumn,
@@ -153,7 +153,7 @@ export default function ColumnCard(props: ColumnCardProps) {
                 task={task}
                 canEdit={canEdit}
                 onDelete={onDeleteTask}
-                onSaveTitle={onSaveTaskTitle}
+                onOpen={onOpenTask}
               />
             ) : (
               <TaskCardLayout
@@ -161,7 +161,7 @@ export default function ColumnCard(props: ColumnCardProps) {
                 task={task}
                 canEdit={false}
                 onDelete={onDeleteTask}
-                onSaveTitle={onSaveTaskTitle}
+                onOpen={onOpenTask}
               />
             ),
           )}
