@@ -60,10 +60,11 @@ access control, and drag-and-drop task management.
 # 1. Clone the repository
 git clone <your-repo-url> && cd <repo>
 
-# 2. (Optional) set a strong JWT secret
-cp .env.example .env   # see "Environment variables" below
+# 2. Configure environment (JWT secret is required for production)
+cp .env.example .env       # edit JWT_SECRET to a strong random value
+#    generate one with:  openssl rand -hex 32
 
-# 3. Build and run everything
+# 3. Build and run everything (migrates + seeds the DB automatically)
 docker compose up --build
 ```
 
@@ -134,7 +135,9 @@ npm run dev              # http://localhost:3000
 | `NEXT_PUBLIC_API_URL` | `http://localhost:3001/api` | Base URL of the backend API |
 
 > **Security note:** always set a strong `JWT_SECRET` in production and restrict
-> `CORS_ORIGIN` to your frontend origin.
+> `CORS_ORIGIN` to your frontend origin. In production (`NODE_ENV=production`)
+> the backend refuses to start if `JWT_SECRET` is missing or shorter than 32
+> characters.
 
 ---
 
@@ -156,6 +159,12 @@ All endpoints are prefixed with `/api`. Authenticated routes require an
 |--------|------|-------------|
 | GET | `/users/me` | Current user |
 | GET | `/users/search?q=` | Search users (for sharing) |
+
+### Health (public)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Liveness/readiness probe → `{ status, database }` (503 if DB unreachable) |
 
 ### Boards
 
@@ -236,6 +245,11 @@ This keeps ordering stable and conflict-free under rapid rearrangement.
 - Security headers (CSP, no-sniff, etc.) applied via Helmet.
 - Input validated with `class-validator`, unknown fields rejected.
 - SQL injection prevented via Prisma's parameterized queries.
+- Rate limiting applied globally and tightened on auth endpoints (brute-force
+  protection).
+- In production the API refuses to start without a strong `JWT_SECRET`.
+- Graceful shutdown: Prisma connections are closed on SIGTERM/SIGINT.
+- Health endpoint (`/api/health`) for orchestrator probes.
 
 ---
 
@@ -247,4 +261,16 @@ cd frontend && npm run build  # outputs frontend/.next
 ```
 
 The Dockerfiles build optimized production images (NestJS compiled output and a
-Next.js standalone server).
+Next.js standalone server) that run as a non-root user.
+
+### Production deployment checklist
+
+1. **JWT secret** — set `JWT_SECRET` to a strong random value (≥ 32 chars); in
+   production the API refuses to boot without one.
+2. **CORS** — set `CORS_ORIGIN` to your frontend origin (not `*`).
+3. **API URL** — set `NEXT_PUBLIC_API_URL` at *build time* to the public API
+   base URL (it is inlined into the frontend bundle).
+4. **Database** — the backend image runs `prisma migrate deploy` on startup;
+   back up your database and use a managed Postgres for real deployments.
+5. **TLS** — terminate HTTPS at a reverse proxy (e.g. Nginx/Traefik) in front
+   of the frontend, since the containers serve plain HTTP.

@@ -17,12 +17,14 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
   backend:
     build: ./backend
     container_name: kanban_backend
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/kanban?schema=public
+      # Override via .env for anything beyond local development.
       JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret}
       JWT_EXPIRES_IN: 7d
       PORT: 3001
@@ -30,6 +32,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3001/api/health']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
     ports:
       - '3001:3001'
 
@@ -42,7 +51,15 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
     ports:
       - '3000:3000'
 
