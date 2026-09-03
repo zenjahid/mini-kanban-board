@@ -229,7 +229,9 @@ This keeps ordering stable and conflict-free under rapid rearrangement.
 ### Security practices
 
 - Passwords hashed with bcrypt (10 rounds); plaintext never stored or returned.
-- JWTs signed with `JWT_SECRET`; tokens never sent in cookies (no CSRF surface).
+- JWTs signed with `JWT_SECRET` and re-validated against the database on every
+  request, so tokens for deleted accounts are rejected.
+- Security headers (CSP, no-sniff, etc.) applied via Helmet.
 - Input validated with `class-validator`, unknown fields rejected.
 - SQL injection prevented via Prisma's parameterized queries.
 

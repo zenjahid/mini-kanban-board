@@ -14,8 +14,11 @@ export class UsersController {
   @Get('search')
   search(
     @CurrentUser() user: AuthUser,
-    @Query('q') query = '',
+    @Query('q') q: string | string[] = '',
   ) {
-    return this.users.search(query, user.id);
+    // Coerce in case the query is repeated (?q=a&q=b), which Express exposes
+    // as an array.
+    const query = Array.isArray(q) ? q[0] : q;
+    return this.users.search(query ?? '', user.id);
   }
 }

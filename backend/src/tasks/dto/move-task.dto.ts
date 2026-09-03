@@ -7,9 +7,10 @@ export class MoveTaskDto {
   columnId: string;
 
   /**
-   * Desired 0-based position of the task in the destination column's final
-   * order (counting every task in that column, including the moved task when
-   * reordering within the same column).
+   * Desired final 0-based index of the task within the destination column,
+   * i.e. how many of that column's other tasks should end up before it.
+   * Valid from 0 up to the number of tasks in the column (excluding the
+   * moving task).
    */
   @IsInt()
   @Min(0)
