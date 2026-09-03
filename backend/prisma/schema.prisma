@@ -1,0 +1,92 @@
+// Mini Kanban Board - Database schema
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Membership / access role on a board.
+/// OWNER  - full control (created the board; cannot be removed/degraded)
+/// EDITOR - can mutate columns & tasks
+/// VIEWER - read-only
+enum BoardRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownedBoards   Board[]       @relation("BoardOwner")
+  memberships   BoardMember[]
+  assignedTasks Task[]        @relation("TaskAssignee")
+}
+
+model Board {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner     User          @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members   BoardMember[]
+  columns   Column[]
+
+  @@index([ownerId])
+}
+
+model BoardMember {
+  id        String    @id @default(cuid())
+  boardId   String
+  userId    String
+  role      BoardRole @default(VIEWER)
+  createdAt DateTime  @default(now())
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, userId])
+  @@index([userId])
+}
+
+model Column {
+  id        String   @id @default(cuid())
+  boardId   String
+  name      String
+  position  Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks Task[]
+
+  @@index([boardId, position])
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  columnId    String
+  title       String
+  description String?
+  position    Float
+  assigneeId  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  column   Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  assignee User?  @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  @@index([columnId, position])
+}

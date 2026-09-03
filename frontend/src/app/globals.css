@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Thin scrollbars for the horizontal board area */
+.kanban-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+.kanban-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.kanban-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.kanban-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

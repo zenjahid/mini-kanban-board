@@ -1,0 +1,50 @@
+name: kanban
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: kanban_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: kanban
+    ports:
+      - '5432:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d kanban']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: kanban_backend
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/kanban?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret}
+      JWT_EXPIRES_IN: 7d
+      PORT: 3001
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '3001:3001'
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
+    container_name: kanban_frontend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
+    depends_on:
+      - backend
+    ports:
+      - '3000:3000'
+
+volumes:
+  db-data:
