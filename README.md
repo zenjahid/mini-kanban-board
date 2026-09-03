@@ -274,3 +274,23 @@ Next.js standalone server) that run as a non-root user.
    back up your database and use a managed Postgres for real deployments.
 5. **TLS** — terminate HTTPS at a reverse proxy (e.g. Nginx/Traefik) in front
    of the frontend, since the containers serve plain HTTP.
+
+### Deploying the frontend to Vercel
+
+The Next.js frontend deploys directly to Vercel (`frontend/vercel.json` is
+included). The NestJS backend **cannot** run on Vercel — it is a long-running
+Node server with a persistent Prisma connection pool, not a serverless
+function — so host the backend and PostgreSQL on a service that supports
+long-running containers (Railway, Render, Fly.io, a VPS, etc.) with a managed
+Postgres (Neon, Supabase, Railway, Render, AWS RDS, …).
+
+1. Create a Vercel project pointing at this repo and set **Root Directory** to
+   `frontend` (Vercel picks up `frontend/vercel.json` automatically).
+2. Add the environment variable in Vercel → Settings → Environment Variables:
+   - `NEXT_PUBLIC_API_URL` = your backend's public base URL, e.g.
+     `https://kanban-api.up.railway.app/api`
+3. Deploy — Vercel auto-detects Next.js and runs `npm ci && npm run build`.
+4. On the backend host set `CORS_ORIGIN` to the Vercel URL (e.g.
+   `https://your-app.vercel.app`) and keep `JWT_SECRET` strong.
+5. Point the backend's `DATABASE_URL` at your managed Postgres and run the
+   migrations (`npx prisma migrate deploy`) and seed once.
