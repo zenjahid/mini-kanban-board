@@ -327,3 +327,10 @@ Vercel + separate-backend split above.
 Railway injects `PORT` at runtime, so both containers listen on the right port
 (the backend reads `PORT` from config and the Next standalone server reads
 `PORT`).
+
+**One-click option:** `railway.template.json` at the repo root defines all
+three services (Postgres + backend + frontend). Push to GitHub, then use the
+**Deploy on Railway** button / template import with that file. `DATABASE_URL`
+and `JWT_SECRET` are wired via reference variables; after deploy, set
+`NEXT_PUBLIC_API_URL` to the backend's real public domain (it is generated at
+deploy time and cannot be known up front).

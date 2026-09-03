@@ -1,0 +1,46 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "$schema_comment": "One-click full-stack deploy template for the Kanban app. Set YOUR_GITHUB_USERNAME and YOUR_GITHUB_REPO before using.",
+  "services": {
+    "postgres": {
+      "type": "postgresql"
+    },
+    "backend": {
+      "type": "github",
+      "repo": "YOUR_GITHUB_USERNAME/YOUR_GITHUB_REPO",
+      "branch": "master",
+      "rootDirectory": "backend",
+      "build": {
+        "builder": "DOCKERFILE"
+      },
+      "deploy": {
+        "healthcheckPath": "/api/health",
+        "healthcheckTimeout": 180,
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 10
+      },
+      "variables": {
+        "DATABASE_URL": "${{postgres.DATABASE_URL}}",
+        "JWT_SECRET": "${{JWT_SECRET}}"
+      }
+    },
+    "frontend": {
+      "type": "github",
+      "repo": "YOUR_GITHUB_USERNAME/YOUR_GITHUB_REPO",
+      "branch": "master",
+      "rootDirectory": "frontend",
+      "build": {
+        "builder": "DOCKERFILE"
+      },
+      "deploy": {
+        "healthcheckPath": "/",
+        "healthcheckTimeout": 180,
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 10
+      },
+      "variables": {
+        "NEXT_PUBLIC_API_URL": "https://SET-BACKEND-DOMAIN.up.railway.app/api"
+      }
+    }
+  }
+}
