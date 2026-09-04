@@ -33,7 +33,8 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGIN
-        value: https://kanban-frontend.onrender.com
+        sync: false
+        value: https://kanban-frontend-rkc2.onrender.com
 
   - type: web
     name: kanban-frontend
@@ -48,4 +49,5 @@ services:
       - key: NODE_VERSION
         value: "20"
       - key: NEXT_PUBLIC_API_URL
-        value: https://kanban-backend.onrender.com/api
+        sync: false
+        value: https://kanban-backend-r2r9.onrender.com/api

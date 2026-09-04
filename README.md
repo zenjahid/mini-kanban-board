@@ -379,11 +379,17 @@ service, and the frontend as a native Node service.
    `NEXT_PUBLIC_API_URL` is available at build time and inlined correctly.
    The backend uses Docker so `prisma migrate deploy` runs automatically on
    boot.
-4. The service URLs are predictable from their names:
-   - Frontend: `https://kanban-frontend.onrender.com`
-   - Backend:  `https://kanban-backend.onrender.com/api`
-   If you rename a service, update `CORS_ORIGIN` (backend) and
-   `NEXT_PUBLIC_API_URL` (frontend) to match.
+4. After deploy, open each service to copy its **actual** URL — Render appends
+   a random suffix to `*.onrender.com` domains (e.g. `kanban-backend-r2r9`,
+   `kanban-frontend-rkc2`), so they are **not** the plain service name.
+5. Set the two cross-service variables in the **dashboard** (they can't be
+   known at blueprint time):
+   - Backend env → `CORS_ORIGIN` = your frontend URL (e.g.
+     `https://kanban-frontend-rkc2.onrender.com`)
+   - Frontend env → `NEXT_PUBLIC_API_URL` = your backend URL + `/api` (e.g.
+     `https://kanban-backend-r2r9.onrender.com/api`)
+   Then deploy each again — the frontend must rebuild to inline the URL; the
+   backend just needs a restart to re-read `CORS_ORIGIN`.
 
 > **Free-tier notes:** Render's free Postgres expires after 30 days, and free
 > web services spin down when idle (first request after sleep is slow). Use a
