@@ -1,0 +1,49 @@
+# Render Blueprint — deploys the full stack with one click.
+# Docs: https://render.com/docs/blueprint-spec
+#
+#   - kanban-db       (managed PostgreSQL)
+#   - kanban-backend  (NestJS — Docker image, `prisma migrate deploy` on boot)
+#   - kanban-frontend (Next.js — native Node build)
+#
+# The frontend is built with the native Node runtime (not Docker) so that
+# NEXT_PUBLIC_API_URL is available at build time and gets inlined into the
+# bundle. The backend uses Docker because it needs the Prisma CLI + engine
+# binaries and a multi-step boot (migrate + start).
+
+databases:
+  - name: kanban-db
+    databaseName: kanban
+    user: kanban
+    plan: free
+    region: oregon
+
+services:
+  - type: web
+    name: kanban-backend
+    runtime: docker
+    rootDir: backend
+    plan: free
+    region: oregon
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kanban-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: https://kanban-frontend.onrender.com
+
+  - type: web
+    name: kanban-frontend
+    runtime: node
+    rootDir: frontend
+    plan: free
+    region: oregon
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://kanban-backend.onrender.com/api

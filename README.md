@@ -363,3 +363,28 @@ three services (Postgres + backend + frontend). Push to GitHub, then use the
 and `JWT_SECRET` are wired via reference variables; after deploy, set
 `NEXT_PUBLIC_API_URL` to the backend's real public domain (it is generated at
 deploy time and cannot be known up front).
+
+### Deploying everything on Render (Blueprint)
+
+Render's **Blueprint** (`render.yaml` at the repo root) deploys the same three
+tiers in one click: a managed PostgreSQL database, the backend as a Docker
+service, and the frontend as a native Node service.
+
+1. Push the repo to GitHub, then in Render → **New + → Blueprint** → select the
+   repo. Render reads `render.yaml` and creates all three.
+2. Render auto-wires `DATABASE_URL` (from the `kanban-db` database) and
+   generates a random `JWT_SECRET`. Override `JWT_SECRET` if you prefer your
+   own value (must be ≥ 32 chars).
+3. The frontend is built with the native Node runtime (not Docker) so
+   `NEXT_PUBLIC_API_URL` is available at build time and inlined correctly.
+   The backend uses Docker so `prisma migrate deploy` runs automatically on
+   boot.
+4. The service URLs are predictable from their names:
+   - Frontend: `https://kanban-frontend.onrender.com`
+   - Backend:  `https://kanban-backend.onrender.com/api`
+   If you rename a service, update `CORS_ORIGIN` (backend) and
+   `NEXT_PUBLIC_API_URL` (frontend) to match.
+
+> **Free-tier notes:** Render's free Postgres expires after 30 days, and free
+> web services spin down when idle (first request after sleep is slow). Use a
+> paid plan for anything long-lived.
