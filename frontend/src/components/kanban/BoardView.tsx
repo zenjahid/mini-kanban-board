@@ -39,19 +39,23 @@ function locateTask(
 
 /**
  * Pure helper that returns a new columns array with the active task moved
- * into the position indicated by the pointer (over a task or an empty column).
+ * into the position indicated by the pointer (over a task or an empty column),
+ * plus the insertion point so the UI can render a drop indicator.
  */
-function reorderColumns(
+function planMove(
   cols: Column[],
   activeId: string,
   overId: string,
   activeTop: number,
   overTop: number,
   overHeight: number,
-): Column[] {
+): {
+  columns: Column[];
+  drop: { columnId: string; index: number } | null;
+} {
   const activeTaskId = activeId.slice(TASK_PREFIX.length);
   const src = locateTask(cols, activeTaskId);
-  if (!src) return cols;
+  if (!src) return { columns: cols, drop: null };
 
   let destColumnIndex: number;
   if (overId.startsWith(COLUMN_PREFIX)) {
@@ -62,7 +66,7 @@ function reorderColumns(
     const loc = locateTask(cols, overId.slice(TASK_PREFIX.length));
     destColumnIndex = loc ? loc.ci : -1;
   }
-  if (destColumnIndex < 0) return cols;
+  if (destColumnIndex < 0) return { columns: cols, drop: null };
 
   const next = cols.map((c) => ({ ...c, tasks: [...c.tasks] }));
   const srcCol = next[src.ci];
@@ -81,7 +85,7 @@ function reorderColumns(
   }
 
   destCol.tasks.splice(insertAt, 0, moved);
-  return next;
+  return { columns: next, drop: { columnId: destCol.id, index: insertAt } };
 }
 
 export default function BoardView({ boardId }: { boardId: string }) {
@@ -100,11 +104,17 @@ export default function BoardView({ boardId }: { boardId: string }) {
   const [newColumnName, setNewColumnName] = useState('');
   const [editingBoardName, setEditingBoardName] = useState(false);
   const [boardName, setBoardName] = useState('');
+  const [dropIndicator, setDropIndicator] = useState<{
+    columnId: string;
+    index: number;
+  } | null>(null);
 
   // columnsRef is the synchronous source of truth while a drag is in flight.
   const columnsRef = useRef<Column[]>([]);
   const draggingRef = useRef(false);
   const skipBoardBlur = useRef(false);
+  // Suppress the click right after a drag so dropping a card doesn't open it.
+  const suppressClick = useRef(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -178,7 +188,7 @@ export default function BoardView({ boardId }: { boardId: string }) {
     const overRect = over.rect;
     if (!activeRect || !overRect) return;
 
-    const next = reorderColumns(
+    const { columns: next, drop } = planMove(
       columnsRef.current,
       String(active.id),
       String(over.id),
@@ -188,12 +198,18 @@ export default function BoardView({ boardId }: { boardId: string }) {
     );
     columnsRef.current = next;
     setColumns(next);
+    setDropIndicator(drop);
   };
 
   const onDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveTask(null);
+    setDropIndicator(null);
     draggingRef.current = false;
+    suppressClick.current = true;
+    window.setTimeout(() => {
+      suppressClick.current = false;
+    }, 150);
 
     if (!over || !board) {
       setColumns(board?.columns ?? []);
@@ -224,7 +240,12 @@ export default function BoardView({ boardId }: { boardId: string }) {
 
   const onDragCancel = () => {
     setActiveTask(null);
+    setDropIndicator(null);
     draggingRef.current = false;
+    suppressClick.current = true;
+    window.setTimeout(() => {
+      suppressClick.current = false;
+    }, 150);
     setColumns(board?.columns ?? []);
     columnsRef.current = board?.columns ?? [];
   };
@@ -256,7 +277,10 @@ export default function BoardView({ boardId }: { boardId: string }) {
     }
   };
 
-  const openTask = (task: Task) => setEditingTask(task);
+  const openTask = (task: Task) => {
+    if (suppressClick.current) return;
+    setEditingTask(task);
+  };
 
   const saveTask = async (
     taskId: string,
@@ -475,6 +499,13 @@ export default function BoardView({ boardId }: { boardId: string }) {
         </div>
       </div>
 
+      {canEdit && (
+        <p className="mb-3 text-xs text-slate-400">
+          Drag cards to reorder — drop them in another column to move them.
+          Click a card to edit.
+        </p>
+      )}
+
       {/* Board */}
       <DndContext
         sensors={sensors}
@@ -492,6 +523,11 @@ export default function BoardView({ boardId }: { boardId: string }) {
               index={i}
               columnCount={columns.length}
               canEdit={canEdit}
+              dropIndex={
+                dropIndicator && dropIndicator.columnId === column.id
+                  ? dropIndicator.index
+                  : undefined
+              }
               onAddTask={addTask}
               onDeleteTask={deleteTask}
               onOpenTask={openTask}
