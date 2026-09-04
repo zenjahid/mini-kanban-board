@@ -78,17 +78,23 @@ cd mini-kanban-board
 cp .env.example .env       # edit JWT_SECRET to a strong random value
 #    generate one with:  openssl rand -hex 32
 
-# 3. Build and run everything (migrates + seeds the DB automatically)
+# 3. Build and run everything (creates + migrates the DB automatically)
 docker compose up --build
 ```
 
-The database is created and migrated automatically on first boot, and seeded
-with demo data. Then open:
+The database is created and migrated automatically on first boot. Then open:
 
 - **Frontend:** http://localhost:3000
 - **Backend API:** http://localhost:3001/api
 
-### Demo accounts (seeded)
+### Demo accounts (optional)
+
+The demo accounts below are **not** created by `docker compose up` — they come
+from the optional seed script. Load them when you need them:
+
+```bash
+docker compose exec backend npx prisma db seed
+```
 
 | Email | Password | Role |
 |-------|----------|------|
