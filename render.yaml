@@ -41,9 +41,11 @@ services:
     rootDir: frontend
     plan: free
     region: oregon
-    buildCommand: npm run build
+    buildCommand: "npm ci && npm run build"
     startCommand: npm start
     healthCheckPath: /
     envVars:
+      - key: NODE_VERSION
+        value: "20"
       - key: NEXT_PUBLIC_API_URL
         value: https://kanban-backend.onrender.com/api
