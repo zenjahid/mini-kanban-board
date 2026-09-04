@@ -275,14 +275,23 @@ Next.js standalone server) that run as a non-root user.
 5. **TLS** — terminate HTTPS at a reverse proxy (e.g. Nginx/Traefik) in front
    of the frontend, since the containers serve plain HTTP.
 
-### Deploying the frontend to Vercel
+### Deploying the frontend to Vercel (with Neon as the database)
 
-The Next.js frontend deploys directly to Vercel (`frontend/vercel.json` is
-included). The NestJS backend **cannot** run on Vercel — it is a long-running
-Node server with a persistent Prisma connection pool, not a serverless
-function — so host the backend and PostgreSQL on a service that supports
-long-running containers (Railway, Render, Fly.io, a VPS, etc.) with a managed
-Postgres (Neon, Supabase, Railway, Render, AWS RDS, …).
+This stack is split across **three** tiers — Vercel + Neon cover only two of
+them:
+
+| Tier | Where it runs |
+|------|---------------|
+| Frontend (Next.js) | **Vercel** |
+| Database (PostgreSQL) | **Neon** (serverless Postgres) |
+| Backend (NestJS) | a long-running host — Railway / Render / Fly.io / VPS |
+
+The NestJS backend **cannot** run on Vercel (it is a long-running Node server
+with a persistent Prisma connection pool, not a serverless function), and Neon
+only hosts the *database* — it does not run your API. So the backend still
+needs its own host.
+
+**1. Frontend on Vercel**
 
 1. Create a Vercel project pointing at this repo and set **Root Directory** to
    `frontend` (Vercel picks up `frontend/vercel.json` automatically).
@@ -290,10 +299,30 @@ Postgres (Neon, Supabase, Railway, Render, AWS RDS, …).
    - `NEXT_PUBLIC_API_URL` = your backend's public base URL, e.g.
      `https://kanban-api.up.railway.app/api`
 3. Deploy — Vercel auto-detects Next.js and runs `npm ci && npm run build`.
-4. On the backend host set `CORS_ORIGIN` to the Vercel URL (e.g.
-   `https://your-app.vercel.app`) and keep `JWT_SECRET` strong.
-5. Point the backend's `DATABASE_URL` at your managed Postgres and run the
-   migrations (`npx prisma migrate deploy`) and seed once.
+
+**2. Database on Neon**
+
+1. Create a project at **neon.tech** and copy its **connection string**
+   (`postgresql://user:pass@ep-….aws.neon.tech/neondb`).
+2. Neon requires SSL, so the URL must include `?sslmode=require` (Neon's
+   "copy" button includes it). Set it as `DATABASE_URL` on the **backend**
+   host (not on Vercel).
+3. Run migrations + seed once against Neon from your machine:
+   ```bash
+   cd backend
+   DATABASE_URL="postgresql://…neon.tech/neondb?sslmode=require" npx prisma migrate deploy
+   DATABASE_URL="postgresql://…neon.tech/neondb?sslmode=require" npx prisma db seed
+   ```
+   > Neon also offers a **pooled** connection string (avoids exhausting
+   serverless connection limits). Use the regular (direct) URL for migrations
+   and seeding; the pooled URL is fine for the backend's runtime
+   `DATABASE_URL`.
+
+**3. Backend on a long-running host**
+
+Deploy the backend as a container (see "Deploying everything on Railway"
+below) and point its `DATABASE_URL` at Neon. Set `CORS_ORIGIN` to your Vercel
+URL and keep `JWT_SECRET` strong (≥ 32 chars).
 
 ### Deploying everything on Railway
 
