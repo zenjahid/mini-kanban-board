@@ -3,6 +3,19 @@
 A full-stack Kanban board with authentication, board sharing, role-based
 access control, and drag-and-drop task management.
 
+## Live Demo
+
+| Service | URL |
+|---------|-----|
+| Frontend | https://kanban-frontend-rkc2.onrender.com |
+| Backend API | https://kanban-backend-r2r9.onrender.com/api |
+| Source code | https://github.com/zenjahid/mini-kanban-board |
+
+> Hosted on Render's **free** tier: services spin down when idle (the first
+> request cold-starts in ~30–60s) and the free Postgres expires after 30 days.
+> Register an account from the frontend, or use the demo credentials in the
+> seed section below.
+
 ## Features
 
 - **Authentication** — register / login with JWT (token-based) auth.
@@ -58,7 +71,8 @@ access control, and drag-and-drop task management.
 
 ```bash
 # 1. Clone the repository
-git clone <your-repo-url> && cd <repo>
+git clone https://github.com/zenjahid/mini-kanban-board.git
+cd mini-kanban-board
 
 # 2. Configure environment (JWT secret is required for production)
 cp .env.example .env       # edit JWT_SECRET to a strong random value
@@ -368,28 +382,34 @@ deploy time and cannot be known up front).
 
 Render's **Blueprint** (`render.yaml` at the repo root) deploys the same three
 tiers in one click: a managed PostgreSQL database, the backend as a Docker
-service, and the frontend as a native Node service.
+service, and the frontend as a native Node service. This is how the live demo
+above is deployed.
 
 1. Push the repo to GitHub, then in Render → **New + → Blueprint** → select the
-   repo. Render reads `render.yaml` and creates all three.
-2. Render auto-wires `DATABASE_URL` (from the `kanban-db` database) and
-   generates a random `JWT_SECRET`. Override `JWT_SECRET` if you prefer your
-   own value (must be ≥ 32 chars).
-3. The frontend is built with the native Node runtime (not Docker) so
-   `NEXT_PUBLIC_API_URL` is available at build time and inlined correctly.
-   The backend uses Docker so `prisma migrate deploy` runs automatically on
-   boot.
-4. After deploy, open each service to copy its **actual** URL — Render appends
-   a random suffix to `*.onrender.com` domains (e.g. `kanban-backend-r2r9`,
-   `kanban-frontend-rkc2`), so they are **not** the plain service name.
-5. Set the two cross-service variables in the **dashboard** (they can't be
-   known at blueprint time):
-   - Backend env → `CORS_ORIGIN` = your frontend URL (e.g.
-     `https://kanban-frontend-rkc2.onrender.com`)
-   - Frontend env → `NEXT_PUBLIC_API_URL` = your backend URL + `/api` (e.g.
-     `https://kanban-backend-r2r9.onrender.com/api`)
-   Then deploy each again — the frontend must rebuild to inline the URL; the
-   backend just needs a restart to re-read `CORS_ORIGIN`.
+   repo. Render reads `render.yaml` and creates all three services.
+2. `render.yaml` is already wired end-to-end:
+   - `DATABASE_URL` comes from the `kanban-db` database (auto-referenced).
+   - `JWT_SECRET` is generated automatically (override it if you prefer your
+     own value — must be ≥ 32 chars).
+   - `CORS_ORIGIN` and `NEXT_PUBLIC_API_URL` point at the live domains.
+3. The frontend builds with the **native Node runtime** so
+   `NEXT_PUBLIC_API_URL` is inlined at build time. The backend uses **Docker**
+   so `prisma migrate deploy` runs automatically on boot.
+4. **Sanity check** — open `https://<your-frontend>.onrender.com`, register an
+   account, and create a board. If login shows "Failed to fetch", it means the
+   two cross-service URLs no longer match your services (Render appends a
+   random suffix to `*.onrender.com` domains). Update `render.yaml` and re-sync
+   the Blueprint:
+
+   ```yaml
+   # backend env
+   CORS_ORIGIN = https://<your-frontend>.onrender.com
+   # frontend env (note the /api suffix)
+   NEXT_PUBLIC_API_URL = https://<your-backend>.onrender.com/api
+   ```
+
+   The frontend must rebuild to re-inline the API URL; the backend only needs
+   a restart to re-read `CORS_ORIGIN`.
 
 > **Free-tier notes:** Render's free Postgres expires after 30 days, and free
 > web services spin down when idle (first request after sleep is slow). Use a
