@@ -379,10 +379,15 @@ Railway injects `PORT` at runtime, so both containers listen on the right port
 
 **One-click option:** `railway.template.json` at the repo root defines all
 three services (Postgres + backend + frontend). Push to GitHub, then use the
-**Deploy on Railway** button / template import with that file. `DATABASE_URL`
-and `JWT_SECRET` are wired via reference variables; after deploy, set
-`NEXT_PUBLIC_API_URL` to the backend's real public domain (it is generated at
-deploy time and cannot be known up front).
+**Deploy on Railway** button / template import with that file.
+`DATABASE_URL` is wired via a reference variable; `JWT_SECRET` ships as a
+placeholder you **must replace** with a strong value (≥ 32 chars, e.g.
+`openssl rand -hex 32`). After deploy, set the two cross-service URLs to the
+real `*.up.railway.app` domains (they are generated at deploy time and cannot
+be known up front):
+
+- backend → `CORS_ORIGIN` = `https://<frontend>.up.railway.app`
+- frontend → `NEXT_PUBLIC_API_URL` = `https://<backend>.up.railway.app/api`
 
 ### Deploying everything on Render (Blueprint)
 

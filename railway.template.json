@@ -1,13 +1,13 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
-  "$schema_comment": "One-click full-stack deploy template for the Kanban app. Set YOUR_GITHUB_USERNAME and YOUR_GITHUB_REPO before using.",
+  "$schema_comment": "One-click full-stack deploy template for the Kanban app. After deploying, set the two SET-*-DOMAIN variables below to the real *.up.railway.app URLs (they are assigned at deploy time).",
   "services": {
     "postgres": {
       "type": "postgresql"
     },
     "backend": {
       "type": "github",
-      "repo": "YOUR_GITHUB_USERNAME/YOUR_GITHUB_REPO",
+      "repo": "zenjahid/mini-kanban-board",
       "branch": "master",
       "rootDirectory": "backend",
       "build": {
@@ -21,12 +21,13 @@
       },
       "variables": {
         "DATABASE_URL": "${{postgres.DATABASE_URL}}",
-        "JWT_SECRET": "${{JWT_SECRET}}"
+        "JWT_SECRET": "change-me-to-a-long-random-secret",
+        "CORS_ORIGIN": "https://SET-FRONTEND-DOMAIN.up.railway.app"
       }
     },
     "frontend": {
       "type": "github",
-      "repo": "YOUR_GITHUB_USERNAME/YOUR_GITHUB_REPO",
+      "repo": "zenjahid/mini-kanban-board",
       "branch": "master",
       "rootDirectory": "frontend",
       "build": {
